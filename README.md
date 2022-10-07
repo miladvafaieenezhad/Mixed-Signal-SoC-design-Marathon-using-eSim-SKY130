@@ -32,7 +32,7 @@ always @ (posedge clk , posedge rst ) begin
 	end
 endmodule
 ```
-mMultiplexer
+Multiplexer
 ```
 module mux20_4 (input wire[15:0] in, input wire[3:0] s, output reg out);
 
