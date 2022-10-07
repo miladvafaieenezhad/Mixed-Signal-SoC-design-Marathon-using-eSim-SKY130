@@ -5,7 +5,7 @@ This marathon is based on eSim, an open-source EDA tool for circuit design, simu
 This work presents a window comparator connected to a 4-bit binary counter. The output of counter goes to a multiplexer as selection lines to direct one of multiples data sources into a single destination. The window comparator circuit, analog part, and counter along with multiplexer, digital circuit, make a mixed signal circuit which is the goal of this project to meet. The simulation is implemented in eSim using SKY130 technology. 
 
 # Reference Circuit
-A window comparator consists of two op-amp.  In a window comparator circuit, if the input voltage (VIN) rises above a certain level (VLOW), the output voltage (VO) reach VDD, and if VIN rises more to above VHIGH, VO drops to GND. In sum, VO is only ON for voltages in between VLOW and VHIGH. The output of window comparator is connected to 4-bit counter which can count from 0000 to 1111 (0 to 15). Then, outputs of counter (Q0 to Q3) go to a 16×1 multiplexer. multiplexer selects one data, Di (D0 < Di < D15), among 16 incoming inputs to the output of multiplexer.
+A window comparator consists of two op-amps.  In a window comparator circuit, if the input voltage (VIN) rises above a certain level (VLOW), the output voltage (VO) reach VDD, and if VIN rises more to above VHIGH, VO drops to GND. In sum, VO is only ON for voltages in between VLOW and VHIGH. The output of window comparator is connected to 4-bit counter which can count from 0000 to 1111 (0 to 15). Then, outputs of counter (Q0 to Q3) go to a 16×1 multiplexer. multiplexer selects one data, Di (D0 < Di < D15), among 16 incoming inputs to the output of multiplexer.
 
 # Reference Circuit Diagram
 
