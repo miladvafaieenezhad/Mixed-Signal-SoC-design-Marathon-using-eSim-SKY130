@@ -1,0 +1,61 @@
+* D:\esim-workspace\window_comparator\window_comparator.cir
+
+* EESchema Netlist Version 1.1 (Spice format) creation date: 10/6/2022 2:59:09 PM
+
+* To exclude a component from the Spice Netlist add [Spice_Netlist_Enabled] user FIELD set to: N
+* To reorder the component spice node sequence add [Spice_Node_Sequence] user FIELD and define sequence: 2,1,0
+
+* Sheet Name: /
+U5  VPULSE plot_v1		
+scmode1  SKY130mode		
+U8  VCOM plot_v1		
+U7  buf1 plot_v1		
+U4  buf0 plot_v1		
+U6  OP1 plot_v1		
+U3  OP0 plot_v1		
+U2  VLOW plot_v1		
+U1  VHIGH plot_v1		
+X1  Net-_SC1-Pad2_ VSS VHIGH VPULSE OP0 GND avsd_opamp		
+X2  Net-_SC1-Pad2_ VSS VPULSE VLOW OP1 GND avsd_opamp		
+VSS1  GND VSS DC		
+VDD1  Net-_SC1-Pad2_ GND DC		
+SC12  VCOM buf1 buf0 buf0 sky130_fd_pr__nfet_01v8_lvt		
+SC15  VCOM buf0 buf1 buf1 sky130_fd_pr__nfet_01v8_lvt		
+SC14  VCOM buf1 Net-_SC13-Pad1_ Net-_SC1-Pad2_ sky130_fd_pr__pfet_01v8_lvt		
+SC13  Net-_SC13-Pad1_ buf0 Net-_SC1-Pad2_ Net-_SC1-Pad2_ sky130_fd_pr__pfet_01v8_lvt		
+SC4  Net-_SC4-Pad1_ OP0 Net-_SC1-Pad2_ Net-_SC1-Pad2_ sky130_fd_pr__pfet_01v8_lvt		
+SC5  Net-_SC4-Pad1_ OP0 GND GND sky130_fd_pr__nfet_01v8_lvt		
+SC6  Net-_SC10-Pad2_ OP1 Net-_SC1-Pad2_ Net-_SC1-Pad2_ sky130_fd_pr__pfet_01v8_lvt		
+SC7  Net-_SC10-Pad2_ OP1 GND GND sky130_fd_pr__nfet_01v8_lvt		
+SC11  buf1 Net-_SC10-Pad2_ GND GND sky130_fd_pr__nfet_01v8_lvt		
+SC10  buf1 Net-_SC10-Pad2_ Net-_SC1-Pad2_ Net-_SC1-Pad2_ sky130_fd_pr__pfet_01v8_lvt		
+SC9  buf0 Net-_SC4-Pad1_ GND GND sky130_fd_pr__nfet_01v8_lvt		
+SC8  buf0 Net-_SC4-Pad1_ Net-_SC1-Pad2_ Net-_SC1-Pad2_ sky130_fd_pr__pfet_01v8_lvt		
+SC3  GND VLOW Net-_SC1-Pad2_ sky130_fd_pr__res_generic_pd		
+SC2  VLOW VHIGH Net-_SC1-Pad2_ sky130_fd_pr__res_generic_pd		
+SC1  VHIGH Net-_SC1-Pad2_ Net-_SC1-Pad2_ sky130_fd_pr__res_generic_pd		
+v1  VPULSE GND pulse		
+U9  Net-_U10-Pad3_ Net-_U10-Pad4_ Net-_U16-Pad17_ Net-_U16-Pad18_ Net-_U16-Pad19_ Net-_U16-Pad20_ count24		
+U11  s2 plot_v1		
+U13  s3 plot_v1		
+U14  s0 plot_v1		
+U12  s1 plot_v1		
+U10  VCOM RESET Net-_U10-Pad3_ Net-_U10-Pad4_ adc_bridge_2		
+U15  RESET plot_v1		
+v2  RESET GND pulse		
+U16  Net-_U16-Pad1_ Net-_U16-Pad2_ Net-_U16-Pad3_ Net-_U16-Pad4_ Net-_U16-Pad5_ Net-_U16-Pad6_ Net-_U16-Pad7_ Net-_U16-Pad8_ Net-_U16-Pad9_ Net-_U16-Pad10_ Net-_U16-Pad11_ Net-_U16-Pad12_ Net-_U16-Pad13_ Net-_U16-Pad14_ Net-_U16-Pad15_ Net-_U16-Pad16_ Net-_U16-Pad17_ Net-_U16-Pad18_ Net-_U16-Pad19_ Net-_U16-Pad20_ Net-_U16-Pad21_ mux20_4		
+U17  Net-_U16-Pad20_ Net-_U16-Pad19_ Net-_U16-Pad18_ Net-_U16-Pad17_ s0 s1 s2 s3 dac_bridge_4		
+v6  in0 GND pulse		
+U21  in0 plot_v1		
+v5  in4 GND pulse		
+v4  in8 GND pulse		
+v3  in15 GND pulse		
+U20  in4 plot_v1		
+U19  in8 plot_v1		
+U18  in15 plot_v1		
+U25  Net-_U16-Pad21_ OUT dac_bridge_1		
+U23  in8 GND GND GND GND GND GND in15 Net-_U16-Pad9_ Net-_U16-Pad10_ Net-_U16-Pad11_ Net-_U16-Pad12_ Net-_U16-Pad13_ Net-_U16-Pad14_ Net-_U16-Pad15_ Net-_U16-Pad16_ adc_bridge_8		
+U22  in0 GND GND GND in4 GND GND GND Net-_U16-Pad1_ Net-_U16-Pad2_ Net-_U16-Pad3_ Net-_U16-Pad4_ Net-_U16-Pad5_ Net-_U16-Pad6_ Net-_U16-Pad7_ Net-_U16-Pad8_ adc_bridge_8		
+U24  OUT plot_v1		
+
+.end
