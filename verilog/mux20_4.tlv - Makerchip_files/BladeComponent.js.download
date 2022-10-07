@@ -1,0 +1,3 @@
+(function(){define("BladeComponent",function(require,extend,module){var $,BladeComponent,Promise,blade;$=require("jquery");Promise=require("bluebird");blade=require("blade");BladeComponent={path:null,compileComponent:function(name,options){blade.Runtime.options.mount=this.blade;blade.Runtime.options.loadTimeout=60000;return new Promise(function(resolve,reject){return blade.Runtime.loadTemplate(`${name}.blade`,function(err,tmpl){if(err){reject(err);return;}
+return tmpl(options,function(err,html){if(err){reject(err);return;}
+return resolve(html);});});});},childPath:function(name){return `${this.path}-${name}`;}};return BladeComponent;});}).call(this);

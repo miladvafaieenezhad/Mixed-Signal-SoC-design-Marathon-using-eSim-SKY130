@@ -1,0 +1,19 @@
+// Common JavaScript functions for the IDE to be included as a script tag by any page
+// using IDE components.
+
+
+// To initialize requirejs, code should:
+//   require.config(IDERequireConfig());
+var IDERequireConfig = function() {
+  return {
+    waitSeconds: 0,  // Prevent RequireJS from timing out.
+    shim: {
+      "jquery.ui": {deps: ["jquery"], exports: "jquery"},  // Exports needed??
+      "jquery.layout":  {deps: ["jquery.ui"], exports: "jquery"}  // Exports needed??
+    },
+    paths: {
+      "jquery.ui": "https://code.jquery.com/ui/1.11.4/jquery-ui.min",
+      "jquery.layout": "/module/FlexSplit/jquery.layout/jquery.layout"
+    }
+  };
+};

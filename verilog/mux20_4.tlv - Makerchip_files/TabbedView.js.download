@@ -1,0 +1,39 @@
+(function(){var hasProp={}.hasOwnProperty;define("TabbedView",function(require,exports,module){var $,BladeComponent,FlexSplit,Logging,Promise,TabbedView,Utils;BladeComponent=require("BladeComponent");FlexSplit=require("FlexSplit");Promise=require("bluebird");$=require("jquery");Utils=require("Utils");Logging=require("Logging");require("jquery.ui");TabbedView=(function(){var el,ref,status;class TabbedView{constructor(){this.initSortable=this.initSortable.bind(this);}
+static _faStatusEl(icon,style){var el;el=document.createElement("I");el.setAttribute("class","fa fa-fw"+icon);return el;}
+init(path,side,parent){this.path=path;this.parent=parent;this.panes={};this.intoSplit(side,this.parent);TabbedView.allTabbedViews[this.path]=this;if(TabbedView.allTabbedViews.length>10){consol.log("DEBUG: My, there are a lot of TabbedViews.  Is delete() being called?");}
+this.lastid=0;return this.compileComponent("TabbedView",{path:this.path,tabbedview:this},this.blade).then((html)=>{var containerEl;this.tabbedviewEl=$(html);containerEl=Utils.$one(`#${this.path}`);containerEl.append(this.tabbedviewEl);this.addEventListeners();this.tabContainer=$(".nav-tabs",containerEl);this.paneContainer=$("[data-tabbedview-panes]",containerEl);return this.initSortable();}).then(()=>{return this;});}
+addEventListeners(){var mergeEl,splitHorizontalEl,splitVerticalEl;splitHorizontalEl=Utils.$one("[data-split-horizontal-menu-item]",this.tabbedviewEl);splitHorizontalEl.mouseover(()=>{return this.preview("horizontal");});splitHorizontalEl.mouseout(()=>{return this.unpreview("horizontal");});splitHorizontalEl.click((e)=>{e.preventDefault();return this.divide("horizontal");});splitVerticalEl=Utils.$one("[data-split-vertical-menu-item]",this.tabbedviewEl);splitVerticalEl.mouseover(()=>{return this.preview("vertical");});splitVerticalEl.mouseout(()=>{return this.unpreview("vertical");});splitVerticalEl.click((e)=>{e.preventDefault();return this.divide("vertical");});mergeEl=$("[data-merge-menu-item]",this.tabbedviewEl);mergeEl.mouseover(()=>{return this.mergePreview();});mergeEl.mouseout(()=>{return this.mergeUnpreview();});return mergeEl.click((e)=>{e.preventDefault();return this.close();});}
+resize(){if(this.activePane){return this.activePane.resize();}}
+delete(){return delete TabbedView.allTabbedViews[this.path];}
+intoSplit(splitSide,containingSplit){this.splitSide=splitSide;this.containingSplit=containingSplit;return this;}
+preview(direction){return this.containingSplit.preview(this.splitSide,direction);}
+unpreview(direction){return this.containingSplit.unpreview(this.splitSide,direction);}
+mergePreview(){return this.containingSplit.mergePreview();}
+mergeUnpreview(){return this.containingSplit.mergeUnpreview();}
+divide(direction){return this.containingSplit.divide(this.splitSide,direction,this);}
+close(){return this.containingSplit.close(this.splitSide);}
+append(pane){this.addPane(pane);this.tabContainer.append(pane.tabEl);if(pane.active){return pane.resize();}}
+addPane(pane){if(this.panes[pane.seqID]){console.log("Adding a pane to TabbedView whose ID already exists.");}
+this.panes[pane.seqID]=pane;pane.tabbedview=this;if(pane.alwaysInDOM){return this.paneContainer.append(pane.paneEl);}}
+tabOrderedPanes(){var id,pane,ref1,ret;ret=[];ref1=this.panes;for(id in ref1){pane=ref1[id];ret[pane.getTabPosition()]=pane;}
+return ret;}
+getTabCnt(){return tabContainer.children().length;}
+getPaneOfTabEl(el){return TabbedView.allPanes[$(el).attr("data-tabbedview-ref")];}
+getTabbedViewOfTabEl(el){var ret;ret=TabbedView.allTabbedViews[$(el).parents("[data-TabbedView]").parent().attr("id")];if(!ret){console.log("getTabbedViewOfTabEl failed");}
+return ret;}
+initSortable(){if($("body > .nav").length<1){$("body").append($("<div>").addClass("nav nav-tabs"));}
+if(this.tabContainer.hasClass("sortable")){this.tabContainer.sortable("destroy").removeClass("sortable").off("sortremove").off("SortMoveElement").off("sortstop");}
+this.tabContainer.sortable({connectWith:"[data-TabbedView-tabs] .nav",scroll:false,appendTo:"body > .nav",helper:"clone",placeholder:"TabbedView-sortable-placeholder"}).addClass("sortable");return this.tabContainer.on("sortstop",(event,ui)=>{var destTabbed,item,pane,tabEl;({item}=ui);tabEl=item[0];pane=this.getPaneOfTabEl(tabEl);Utils.assert(this===pane.tabbedview,"\"sortstop\" triggered on TabbedView for tab it doesn't contain.");destTabbed=this.getTabbedViewOfTabEl(tabEl);if(destTabbed!==this){this.dissociate(pane);destTabbed.addPane(pane);return destTabbed.activatePane(pane);}else{if(!pane.active){return this.activatePane(pane);}}});}
+dissociate(pane){var id,newPane,p,ref1;if(pane===this.activePane){newPane=null;ref1=this.panes;for(id in ref1){p=ref1[id];if(p!==pane){newPane=p;break;}}
+this.activatePane(newPane);}
+Utils.assert(this.panes[pane.seqID],`Removing a pane ${pane.mnemonic} from TabbedView it isn't in.`);return delete this.panes[pane.seqID];}
+getPosition(item){return item.parent().children().index(item);}
+maxPosition(tabs){var k,position;return Math.max(-1,...((function(){var results;results=[];for(k in tabs){if(!hasProp.call(tabs,k))continue;({position}=tabs[k]);results.push(position);}
+return results;})()));}
+sortPosition(tabs){return Object.keys(tabs).sort(function(a,b){return tabs[a].position-tabs[b].position;});}
+activatePane(pane){var id,p,ref1;if(pane!==this.activePane){ref1=this.panes;for(id in ref1){p=ref1[id];p.setTabActive(p===pane);}
+if(this.activePane){if(this.activePane.alwaysInDOM){this.activePane.paneEl.attr("data-tabbedview-active","false");}else{this.activePane.paneEl.detach();}}
+if(pane){if(!pane.alwaysInDOM){this.paneContainer.append(pane.paneEl);}
+pane.resize();pane.paneEl.attr("data-tabbedview-active","true");}
+return this.activePane=pane;}}};TabbedView.allTabbedViews={};TabbedView.paneID=0;TabbedView.allPanes={};TabbedView.prototype.lastid=null;TabbedView.prototype.path=null;TabbedView.prototype.panes=null;TabbedView.prototype.tabbedviewEl=null;TabbedView.prototype.tabContainer=null;TabbedView.prototype.paneContainer=null;TabbedView.prototype.activePane=null;TabbedView.prototype.splitSide=null;TabbedView.prototype.containingSplit=null;TabbedView.statusEl={none:TabbedView._faStatusEl(""),success:TabbedView._faStatusEl(" fa-check"),fail:TabbedView._faStatusEl(" fa-times"),timeout:TabbedView._faStatusEl(" fa-clock-o"),working:TabbedView._faStatusEl(" fa-spinner fa-pulse"),outdated:(()=>{var el,iconEl;iconEl=TabbedView._faStatusEl(" fa-circle");el=document.createElement("SPAN");el.appendChild(iconEl);el.appendChild(TabbedView._faStatusEl(""));return el;})()};ref=TabbedView.statusEl;for(status in ref){el=ref[status];el.className+=" status-el";}
+return TabbedView;}).call(this);Utils.extend(TabbedView,module.config());Utils.extend(TabbedView,FlexSplit.Child,{init:1,tabOrderedPanes:1,resize:1});Utils.extend(TabbedView,BladeComponent);return TabbedView;});}).call(this);

@@ -1,0 +1,79 @@
+(function(){var ScopeVariable,SignalValue,Utils,Variable,WaveData,indexOf=[].indexOf,hasProp={}.hasOwnProperty;[Variable,ScopeVariable,SignalValue,Utils]=[];WaveData=(function(){var Scope,clkSig,resetSig;class WaveData{constructor(src,sandSim){this.sandSim=sandSim;SignalValue.staticInit(this.TIME_SLOT_WIDTH,this.TRANSITION_FIELDS);Variable.staticInit(this.TIME_SLOT_WIDTH,this.TRANSITION_FIELDS);this.updateData(src);}
+updateData(src){if(!src){src=getVcd();}
+this.parseData(src);this.clkAndReset();this.mapTime();this.initSigs();this.lookupConditionSignals();return this.generateInvalids();}
+addPoint(nickname,cyc,value){if(this.wavesByNickname[nickname]){return this.wavesByNickname[nickname].transitions.push(cyc,value,true);}}
+timeToCycle(time){return(time-this.cycleZeroTime)/this.cycleLength;}
+parseData(input){var carrier,currentAlignmentDelta,currentScope,currentTime,currentVcdScope,cycleLengthConfidence,date,debugSigsDepth,debugSigsGtkwave,debugSigsScope,delta,depth,e,fullName,id,inDebugSigs,index,isFromMakerchip,item,j,l,len1,len2,letters,lines,m,mod,next,nickname,nonExistentSignal,oldTime,ref,ref1,rootScope,s,scope,setEnd,svScope,svVars,temp,tlvScope,tlvTopScope,tlvVars,topVars,ts,v,value,vcdScopes,version,w,words;lines=input.split("\n");lines=(function(){var j,len1,results;results=[];for(j=0,len1=lines.length;j<len1;j++){item=lines[j];if(item.length>0){results.push(item);}}
+return results;})();w=[];for(j=0,len1=lines.length;j<len1;j++){l=lines[j];w.push(l.trim());}
+words=[];for(m=0,len2=w.length;m<len2;m++){l=w[m];words.push(...(l.split(" ")));}
+words=(function(){var len3,n,results;results=[];for(n=0,len3=words.length;n<len3;n++){item=words[n];if(item.trim().length>0){results.push(item);}}
+return results;})();carrier=[];currentTime=-1;isFromMakerchip=null;rootScope=new ScopeVariable("",null,0);svScope=new ScopeVariable("SV",rootScope,1);tlvTopScope=new ScopeVariable("TLV",rootScope,1);currentScope=rootScope;ts="";version="";depth=-1;setEnd=false;inDebugSigs=false;debugSigsGtkwave=false;debugSigsScope=null;debugSigsDepth=-1;vcdScopes=[];currentVcdScope=null;currentAlignmentDelta=0;cycleLengthConfidence=0;this.numTlvSignals=0;this.wavesByNickname={};this.sigHier=new Scope(null,false,"");tlvScope=new Scope(this.sigHier,true,"TLV");new Scope(this.sigHier,false,"SV");svVars={};topVars={};tlvVars={};index=0;scope=this.sigHier.children.SV;while(index<words.length&&words[index]!=="$dumpvars"&&!setEnd){next=words[index];index++;if(next==="$end"&&carrier.length>0){id=carrier.shift();temp=carrier;carrier=[];switch(id){case "$date":date=temp;break;case "$version":version=temp;break;case "$timescale":ts=temp;break;case "$comment":null;break;case "$var":if(currentScope!==rootScope){v=Variable._makeVar(this,temp,currentScope.name,currentScope.depth);if(inDebugSigs){tlvVars[v.fullName]=null;this.numTlvSignals++;}else{svVars[v.fullName]=null;if(currentScope===svScope){if(v.notFullName==="clk"){topVars[v.fullName]=null;this.clkSig=v;this.sigHier.sigs.clk=v;}
+if(v.notFullName==="reset"){topVars[v.fullName]=null;this.resetSig=v;this.sigHier.sigs.reset=v;}}}
+scope.sigs[v.notFullName]=v;if(!this.wavesByNickname[v.nickname]){this.wavesByNickname[v.nickname]={vars:[],transitions:[]};}
+this.wavesByNickname[v.nickname].vars.push(v);}
+break;case "$scope":currentVcdScope=temp[1];currentVcdScope=currentVcdScope.replace(/\((\d+)\)$/,"[$1]");currentVcdScope=currentVcdScope.replace(/<(\d+)>$/,"[$1]");if(inDebugSigs&&debugSigsGtkwave){if(currentVcdScope.startsWith("P_")){currentVcdScope="|"+currentVcdScope.substring(2);}}
+vcdScopes.push(currentVcdScope);if(isFromMakerchip===null){isFromMakerchip=currentVcdScope==="TOP";if(!isFromMakerchip){depth++;currentScope=svScope;}}
+if(currentVcdScope.startsWith("DEBUG_SIGS")&&debugSigsScope!==null){Utils.assert(false,"VCD trace file was generated from multiple \TLV contexts (DEBUG_SIGS scopes presumably generated from SandPiper with --debugSigs argument). This is not currently supported.");}
+if((currentScope===rootScope)&&(currentVcdScope==="top")){currentScope=svScope;depth=1;}else if(currentVcdScope.startsWith("DEBUG_SIGS")&&debugSigsScope===null){debugSigsScope=currentScope;debugSigsGtkwave=currentVcdScope==="DEBUG_SIGS_GTKWAVE";debugSigsDepth=depth;depth=1;currentScope=tlvTopScope;tlvScope.svParent=scope;scope=tlvScope;inDebugSigs=true;}else if(depth>=0){depth++;if(temp.length>=2){currentScope=new ScopeVariable(currentVcdScope,currentScope,depth,temp.length>2?temp[2]:"");}else{console.log(`VCD file contains malformed $scope line: ${temp}`);}
+s=new Scope(scope,inDebugSigs,currentVcdScope);scope.children[currentVcdScope]=s;scope=s;}
+break;case "$upscope":if(currentScope===tlvTopScope){currentScope=debugSigsScope;depth=debugSigsDepth;scope=this.sigHier.children.TLV.svParent;inDebugSigs=false;}else if(currentScope===svScope){currentScope=rootScope;depth===-1;}else if(currentScope!==rootScope){currentScope=currentScope.parent;depth--;scope=scope.parent;}
+currentVcdScope=vcdScopes.pop();break;case "$enddefinitions":setEnd=true;break;default:console.log(`unexpected identifier: ${id}\n`);}}else{carrier.push(next);}}
+if(this.sigHier.children.TLV.children.legth<=0&&this.sigHier.children.TLV.sigs.length<=0){delete this.sigHier.children.TLV;}
+this.signals={};for(fullName in topVars){this.signals[fullName]=topVars[fullName];}
+for(fullName in tlvVars){this.signals[fullName]=tlvVars[fullName];}
+for(fullName in svVars){this.signals[fullName]=svVars[fullName];}
+try{currentTime=null;while(index<words.length&&(words[index]!=null)){next=words[index];index++;if(next[0]==="#"){oldTime=currentTime;currentTime=parseInt(next.substring(1));if(isNaN(currentTime)){throw new Error(`Time string \"${next}\" is malformed.`);}
+if(oldTime===null){this.start=currentTime;}else{delta=currentTime-oldTime;if(delta<0){throw new Error(`Time steps backward from ${oldTime} to ${currentTime}.`);}
+if(delta>0){if(this.cycleLength===null){this.cycleLength=delta*2;}
+if(this.cycleLength===delta*2){cycleLengthConfidence++;}else{cycleLengthConfidence--;if(cycleLengthConfidence<=0){this.cycleLength=delta*2;cycleLengthConfidence=1;}
+this.cycleLengthConsistent=false;}
+mod=(currentTime-this.start)%this.cycleLength;currentAlignmentDelta=mod===0?1:mod===delta?-1:0;}}}else if(next[0]==="$"){if(next==="$comment"){while(next&&(next!=="$end")){next=words[index];index++;}}else if((next!=="$dumpvars")&&((currentTime!==this.start)||(next!=="$end"))){throw new Error(`Found unexpected word \"${next}\".`);}}else{if(currentTime===null){this.start=currentTime=0;console.log("Warning: VCD parsing found signal values prior to a timestamp. Assuming time=0.");}
+letters=next.split("");nickname="";value="";if((ref=parseInt(letters[0]),indexOf.call([0,1,2,3,4,5,6,7,8,9],ref)>=0)||(letters[0]==="x")||(letters[0]==="z")){nickname=next.substring(1);value=letters[0];}else{nickname=words[index];index++;value=next.substring(1);}
+this.addPoint(nickname,currentTime,value);this.edgeAlignmentCount+=currentAlignmentDelta;}}
+while(index<words.length&&((ref1=words[index])!=="$dumpvars"&&ref1!=="#0")){index++;}}catch(error){e=error;Utils.assert(false,`Error parsing VCD file: ${e.message}`);}
+nonExistentSignal=new Variable(this,0,"","","","wire","[-1:0]",0);nonExistentSignal.missing=true;this.wavesByNickname[""]={vars:[nonExistentSignal],transitions:[this.start,"",false]};this.lastTime=currentTime;this.timescale={number:"",unit:""};if(ts.length>1){this.timescale.number=parseInt(ts[0],10);return this.timescale.unit=ts[1];}else{index=1;ts=ts[0].trim();while(!isNaN(ts.substring(0,index))&&index<=ts.length){index++;}
+this.timescale.number=parseInt(ts.substring(0,index),10);return this.timescale.unit=ts.substring(index-1);}}
+clkAndReset(){var cTrans,len,msg,ok,rTrans,vals;if(this.clkSig){cTrans=this.wavesByNickname[this.clkSig.nickname].transitions;if(cTrans.length<6){console.log("Warning: Not enough clk cycles in waveform to determine clock period.");}else{vals=cTrans[1]+cTrans[4];this.cycleLength=cTrans[6]-cTrans[0];if(this.sandSim){ok=vals==="10"&&(cTrans[0]===this.start)&&(this.cycleLength===2);Utils.assert(ok,"Clk signal does not exhibit the expected behavior.");}else{ok=(vals==="01")||(vals==="10");}}}
+if(!this.cycleLength){this.cycleLength=2;this.cycleLengthConsistent=false;}
+if(!this.clkSig){if(this.sandSim){Utils.assert(false,`Trace is missing 'clk' signal. Using cycle time of ${this.cycleLength}.`);}else{if(!this.cycleLengthConsistent){Utils.assert(false,`No 'clk' signal and couldn't reliably infer cycle time from trace. Using best guess of ${this.cycleLength}.`);}else{console.log(`No 'clk' signal found. Inferred clock cycle time of ${this.cycleLength} from trace's timesteps.`);}}}
+if(this.sandSim){Utils.assert(this.resetSig,"Trace is missing reset signal.");}
+this.cycleZeroTime=this.start;if(this.resetSig){rTrans=this.wavesByNickname[this.resetSig.nickname].transitions;len=rTrans.length;if(((len===6)||(len===9))&&(rTrans[0]===this.start)&&(rTrans[len-5]==="1")&&(rTrans[len-2]==="0")){return this.cycleZeroTime=rTrans[len-3];}}else{if(this.edgeAlignmentCount<0){this.cycleZeroTime+=this.cycleLength/2;}
+msg=`Trace is missing 'reset' signal. Cycle zero edge placed at simulation time ${this.cycleZeroTime}.`;if(this.sandSim){return Utils.assert(false,`Error: ${msg}`);}else{return console.log(`Warning: ${msg}`);}}}
+mapTime(){var i,nickname,ref,t,wave;ref=this.wavesByNickname;for(nickname in ref){wave=ref[nickname];t=wave.transitions;i=0;while(i<t.length){t[i]=this.timeToCycle(t[i]);i+=3;}}
+this.startCycle=this.timeToCycle(this.start);this.endCycle=this.timeToCycle(this.lastTime);return this.lastTime+=this.cycleLength/2;}
+initSigs(){var anchors,j,k,len1,nickname,ref,ref1,v,wave;ref=this.wavesByNickname;for(nickname in ref){wave=ref[nickname];anchors=null;ref1=wave.vars;for(j=0,len1=ref1.length;j<len1;j++){v=ref1[j];if(anchors===null&&v.conditions.length===0){anchors=this.computeAnchors(wave.transitions);}
+v._setTransitions(wave.transitions,anchors);if(this.signals[v.fullName]!=null){console.log(`ERROR: Multiple signals with the name ${v.fullName}. Bit merging not supported.`);}else{this.signals[v.fullName]=v;}}}
+this.names=(function(){var ref2,results;ref2=this.signals;results=[];for(k in ref2){if(!hasProp.call(ref2,k))continue;v=ref2[k];results.push(v.fullName);}
+return results;}).call(this);return this.numSignals=this.names.length;}
+computeAnchors(transitions){var anchorPt,anchors,cyc,done,i,len,trans;Utils.assert(transitions[0]===this.startCycle,`Expected signal waveform to start at cycle ${this.startCycle}.`);len=Math.round(transitions.length/this.TRANSITION_FIELDS);anchors=[];anchorPt=0;trans=0;done=false;while(!done){i=trans*this.TRANSITION_FIELDS;if(trans<len){cyc=transitions[i];}else{done=1;cyc=this.endCycle+1;}
+while(cyc>this.anchorIndexToCycle(anchorPt)){anchors[anchorPt]=i-this.TRANSITION_FIELDS;anchorPt++;}
+trans++;}
+return anchors;}
+anchorIndexToCycle(i){return i*this.TIME_SLOT_WIDTH+this.startCycle;}
+getTimescale(){return this.timescale;}
+getStartCycle(){return this.startCycle;}
+getEndCycle(){return this.endCycle;}
+getEndViewerCycle(){return this.endCycle+0.5;}
+getSignals(){return this.signals;}
+getNumSignals(){return this.numSignals;}
+getSignalNames(){return this.names;}
+getScopeByName(name){if(this.signals[name]!=null){return this.signals[name].scope;}
+return "";}
+getSignalValueAtCycleByName(name,cyc){var sig;sig=this.getSignalByName(name);return new SignalValue(sig,cyc);}
+getSignalByName(name){var ret;ret=null;if(this.signals[name]!=null){ret=this.signals[name];}else{console.log(`Info: Signal not found: ${name}`);}
+return ret;}
+lookupConditionSignals(){var condSig,condition,conditions,j,len1,name,newCond,ref,results,sig;ref=this.signals;results=[];for(name in ref){if(!hasProp.call(ref,name))continue;sig=ref[name];newCond=[];conditions=sig.conditions;for(j=0,len1=conditions.length;j<len1;j++){condition=conditions[j];condSig=this.getSignalByName(condition);if(condSig==null){console.log(`Can't find condition signal: ${condition} for signal ${name}`);}
+newCond.push(condSig);}
+results.push(sig.conditions=newCond);}
+return results;}
+generateInvalids(){var cond,condCycle,condSig,condValid,conditions,cyc,j,len1,len2,len3,m,n,name,newTrans,nextCycle,origTrans,origTransCycle,prevValid,prevValue,ref,ref1,results,sig,transIndex,valid;ref=this.signals;results=[];for(name in ref){if(!hasProp.call(ref,name))continue;sig=ref[name];origTrans=sig.transitions;if(sig.conditions.length>0){newTrans=[];transIndex=-this.TRANSITION_FIELDS;cyc=void 0;prevValue=null;prevValid=true;conditions=[];ref1=sig.conditions;for(j=0,len1=ref1.length;j<len1;j++){condSig=ref1[j];if(condSig!==null){conditions.push({trans:condSig.transitions,transIndex:-this.TRANSITION_FIELDS,offset:sig.cycle-condSig.cycle,nextCycle:null});}}
+while(true){nextCycle=origTransCycle=origTrans[transIndex+this.TRANSITION_FIELDS];for(m=0,len2=conditions.length;m<len2;m++){cond=conditions[m];condCycle=cond.trans[cond.transIndex+this.TRANSITION_FIELDS];if(typeof condCycle!=="undefined"){cond.nextCycle=cyc=condCycle+cond.offset;if((typeof nextCycle==="undefined")||(cyc<nextCycle)){nextCycle=cyc;}}}
+if(typeof nextCycle==="undefined"||nextCycle>this.endCycle){break;}
+if(origTransCycle===nextCycle){transIndex+=this.TRANSITION_FIELDS;}
+valid=true;for(n=0,len3=conditions.length;n<len3;n++){cond=conditions[n];if(cond.nextCycle===nextCycle){cond.transIndex+=this.TRANSITION_FIELDS;}
+condValid=cond.trans[cond.transIndex+1];if(valid!==false){if(condValid==="0"){valid=false;}else{if(typeof condValid==="undefined"){valid=void 0;}}}}
+if((origTrans[transIndex+1]!==prevValue)||(valid!==prevValid)){prevValue=origTrans[transIndex+1];prevValid=valid;newTrans.push(nextCycle,prevValue,prevValid);}}
+results.push(sig._setTransitions(newTrans,this.computeAnchors(newTrans)));}else{results.push(void 0);}}
+return results;}};WaveData.prototype.TIME_SLOT_WIDTH=10;WaveData.prototype.TRANSITION_FIELDS=3;WaveData.prototype.timescale=null;WaveData.prototype.signals=null;WaveData.prototype.sigHier=null;WaveData.prototype.lastTime=-1;WaveData.prototype.endCycle=-1;WaveData.prototype.start=2e308;WaveData.prototype.startCycle=2e308;WaveData.prototype.names=null;WaveData.prototype.numSignals=0;WaveData.prototype.numTlvSignals=0;WaveData.prototype.sandSim=null;WaveData.prototype.cycleLength=null;WaveData.prototype.cycleLengthConsistent=true;WaveData.prototype.cycleZeroTime=null;WaveData.prototype.wavesByNickname=null;WaveData.prototype.edgeAlignmentCount=10;clkSig=null;resetSig=null;Scope=class Scope{constructor(parent,isTlv,name1){this.parent=parent;this.isTlv=isTlv;this.name=name1;this.sigs={};this.children={};if(this.parent){if(this.parent.children[this.name]!=null){console.log(`Error: Ignoring duplicate scope ${this.parent.children[this.name].getFullScope()} in trace file.`);}else{this.parent.children[this.name]=this;}}}
+addSig(sig){if(this.sigs[sig.notFullName]!=null){return console.log(`Error: Ignoring duplicate signal ${sig.fullName}.`);}else{return this.sigs[sig.notFullName]=sig;}}
+getFullScope(){if(this.parent){return(this.parent.name?this.parent.getFullScope()+(this.isTlv?"":"."):"")+this.name;}else{return "";}}};return WaveData;}).call(this);define(function(require,exports,module){var $;$=require("jquery");Utils=require("Utils");Variable=require("VCD/Variable");ScopeVariable=require("VCD/ScopeVariable");SignalValue=require("VCD/SignalValue");$.extend(WaveData.prototype,module.config());return WaveData;});}).call(this);

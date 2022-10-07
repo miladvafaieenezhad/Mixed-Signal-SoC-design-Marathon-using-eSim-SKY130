@@ -1,0 +1,33 @@
+(function(){var $,Logging,Promise;[$,Promise]=[];if(typeof window==="undefined"){$={extend:require("extend")};}
+if(typeof window==="undefined"){Promise=require("bluebird");}
+Logging=(function(){class Logging{static FATAL(devMsg){return new Logging("fatal").user(devMsg);}
+static ERROR(devMsg){return new Logging("error").user(devMsg);}
+static WARN(usrMsg){return new Logging("warn").user(usrMsg);}
+static INFO(devMsg){return new Logging("info").dev(devMsg);}
+static USER(usrMsg){return new Logging("user").user(usrMsg);}
+static DETAIL(breakpoint){return new Logging("detail").add({breakpoint});}
+static DEBUG(breakpoint,devMsg){return new Logging("debug").dev(devMsg).add({breakpoint});}
+constructor(severity){this.severity=severity;this.data={};this.time=Date.now();this.add({severity:this.severity,time:this.time});}
+user(usrMsg1){this.usrMsg=usrMsg1;return this.add({usrMsg:this.usrMsg});}
+dev(devMsg1){this.devMsg=devMsg1;return this.add({devMsg:this.devMsg});}
+uid(userID){this.userID=userID;return this.add({userID:this.userID});}
+loc(_package,method){this.package=_package;this.method=method;return this.add({package:this.package,method:this.method});}
+err(err){this.err=err;this.errString=this.err.toString();this.errStack=this.err.stack;return this.add({err:this.err,errString:this.errString,errStack:this.errStack});}
+attempts(retryCount){this.retryCount=retryCount;return this.add({retryCount:this.retryCount});}
+retry(retryCB){this.retryCB=retryCB;return this.add({retryCB:this.retryCB.toString()});}
+retryPromise(){var _retryCB,ref;_retryCB=(ref=this.retryCB)!=null?ref:function(){return true;};return new Promise((resolve,reject)=>{return this.retryCB(function(){_retryCB();return resolve();});});}
+display(display){display.show(this);return this;}
+send(){console.log(this.data);$.post("/error/",this.data);return this;}
+httpStatus(status){if(status){this._httpStatus=status;return this;}
+if(this._httpStatus){return this._httpStatus;}
+switch(this.severity){case "fatal":return 503;case "error":return 500;case "warn":return 400;case "user":return 422;default:return 200;}}
+connect(req,res){res.status(this.httpStatus());if(this.usrMsg){res.send(`Error while ${this.usrMsg}`);}
+if(!this.usrMsg){res.send("Server-side error.");}
+return this;}
+json(req,res){res.status(this.httpStatus());if(this.usrMsg){res.json({err:this.usrMsg});}
+if(!this.usrMsg){res.json({err:"Server-side error."});}
+return this;}
+log(log){if((log.message!=null)&&typeof log.message==="function"){log.message(this.data);}else{console.log(`Bug: log.message not a function. Dumping log:\n${log}`);}
+return this;}
+add(k,v){if(!v){$.extend(this.data,k);}else{this.data[k]=v;}
+return this;}};Logging.prototype.severity=null;Logging.prototype.time=null;Logging.prototype.data=null;Logging.prototype._httpStatus=null;return Logging;}).call(this);if(typeof window==="undefined"){module.exports=Logging;}else{define("Logging",function(require,exports,module){$=require("jquery");Promise=require("bluebird");$.extend(Logging.prototype,module.config());return Logging;});}}).call(this);
