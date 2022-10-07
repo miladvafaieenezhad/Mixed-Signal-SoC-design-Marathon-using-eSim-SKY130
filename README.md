@@ -165,7 +165,7 @@ The input, reference voltages and the output of window comparator:
 
 ![comparator](https://user-images.githubusercontent.com/38715276/194578666-f8e08270-f32c-497f-94e2-e882eda925f0.png)
 
-The reset signal and output of the counter:
+The reset and output signal of the counter:
 
 ![counter](https://user-images.githubusercontent.com/38715276/194578731-b847e4d9-7459-440d-bdd1-f59e1c45631a.png)
 
