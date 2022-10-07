@@ -1,0 +1,232 @@
+(function(){var baseApi,ref;baseApi=(ref=window.BASE_API_URL)!=null?ref:"";require.config({packages:[{name:"@nx-js/compiler-util-hack",location:`${baseApi}/module/VizPane/@nx-js/compiler-util`,main:"dist/cjs.es5.js"}]});define("VizPane",function(require,exports,module){var $,Logging,ModelViewSync,NonExistentSignalError,Pane,Promise,SignalValue,SignalValueSet,Utils,VizAlphaBlock,VizAlphaContext,VizBlock,VizElement,VizInstanceContext,VizInstanceElement,VizJSContext,VizPane,VizScopeContext,VizScopeElement,nxCompiler;Logging=require("Logging");ModelViewSync=require("ModelViewSync");Pane=require("Pane");SignalValue=require("VCD/SignalValue");NonExistentSignalError=SignalValue.NonExistentSignalError;SignalValueSet=require("VCD/SignalValueSet");$=require("jquery");Logging=require("Logging");Utils=require("Utils");Promise=require("bluebird");nxCompiler=require("@nx-js/compiler-util-hack");VizPane=(function(){class VizPane extends Pane{constructor(){super();this.model=null;this.cyc=0;this.hackFabric();}
+hackFabric(){fabric.Object.prototype.objectCaching=false;fabric.Object.prototype.setText=function(text){console.log("Warning: setText(...) is depricated. Use set({text: ...}) instead.");return this.set({text});};fabric.Object.prototype.setFill=function(fill){console.log("Warning: setFill(...) is depricated. Use set({fill: ...}) instead.");return this.set({fill});};fabric.Object.prototype.setStroke=function(stroke){console.log("Warning: setStroke(...) is depricated. Use set({stroke: ...}) instead.");return this.set({stroke});};fabric.Object.prototype.setStrokeWidth=function(strokeWidth){console.log("Warning: setStrokeWidth(...) is depricated. Use set({strokeWidth: ...}) instead.");return this.set({strokeWidth});};fabric.Object.prototype.setVisible=function(visible){console.log("Warning: setVisible(...) is depricated. Use set({visible: ...}) instead.");return this.set({visible});};return fabric.Object.prototype.setOpacity=function(opacity){console.log("Warning: setOpacity(...) is depricated. Use set({opacity: ...}) instead.");return this.set({opacity});};}
+init(name,ide,project,tabbedview){return this.initPane("VizPane",name,ide,project,tabbedview,{},true).then(()=>{var el;this.enableTimestamp();el=Utils.$one('<canvas id="canvas"'+' data-Viz-canvas="data-Viz-canvas"></canvas>');this.contentContainerEl[0].appendChild(el[0]);return this;});}
+resize(){if(this.content!==null){return this.content.resize(this.contentContainerEl.width(),this.contentContainerEl.height());}}
+onViz(model1){var prevFocus,prevScale,w;this.model=model1;this.model={type:"BEH_HIER",ident:"/top",children:this.model};this.renderedCyc=null;if(this.content!==null){prevScale=this.content.contentScale;prevFocus=this.content.userFocus;this.content.destroy();this.content=null;this.content=new VizPane.ScalableFabric(this,prevScale,prevFocus);}else{this.content=new VizPane.ScalableFabric(this);}
+this.vizGlobal={canvas:this.content.canvas,Grid:VizPane.Grid};this.prepModel(this.model);if(!this.model.hasVizAlpha&&!this.model.hasVizJS){this.model.viz_alpha=new VizAlphaBlock(this,this.defaultVizSrc);}
+if(!this.model.hasVizJS){this.model.viz_js=new VizBlock(this,"",false,null,false);}
+this.oldTopInstance=new VizScopeContext(null,"top",this.model,this,[]);w=this.model.viz_js.viz.where;if(w.width==null){w.width=600;}
+if(w.height==null){w.height=600;}
+if(w.left==null){w.left=-w.width/2;}
+if(w.top==null){w.top=-w.height/2;}
+w.justifyX="center";w.justifyY="center";if(w.visible==null){w.visible=false;}
+this.topInstance=new VizInstanceElement(null,0,this.model,this,[]);if(this.topInstance.whereBox.visible){this.vizGlobal.canvas.add(this.topInstance.whereBox);}
+this.vizGlobal.canvas.add(this.topInstance.group);return this.resize();}
+compiler(compiler){compiler.on("newcompile",(lastCompileID)=>{this.lastCompileID=lastCompileID;this.model=null;return this.setStatus("working");});compiler.on("vcd",(waveData)=>{return this.readyWaveData=waveData;});compiler.on("verilator/done",(data)=>{if(data.success==="success"){this.vcdCompileID=this.lastCompileID;return this.gotCompileResults();}else{return this.setStatus(data.timeout?"timeout":"fail");}});compiler.on("parse model",(model)=>{if(model!==null){return this.onViz(model);}});compiler.on("sandpiper/done",(data)=>{if(data.success==="success"){return;}
+return this.setStatus(data.timeout?"timeout":"fail");});return compiler.on("parse model/done",(data)=>{if(data.success==="success"){this.parseModelCompileID=this.lastCompileID;return this.gotCompileResults();}else{return this.setStatus(data.timeout?"timeout":"fail");}});}
+gotCompileResults(){if(this.vcdCompileID===this.parseModelCompileID){this.setStatus("success");Utils.assert(this.readyWaveData!==null);this.setWaveData(this.readyWaveData);if(this.model!==null){this.topInstance.onTraceData([]);this.render();}}
+return this;}
+initOpened(){}
+prepModel(model){var has_range,j,len,obj,ref1,ret;ret={hasVizAlpha:false,hasVizJS:true};ref1=model.children;for(j=0,len=ref1.length;j<len;j++){obj=ref1[j];has_range=model.min_index!=null;if(has_range!==(model.max_index!=null)){Utility.assert(false,"Malformed scope range properties in VIZ file.");delete model.min_index;delete model.max_index;has_range=false;}
+if(obj.type==="VIZ_ALPHA"){model.hasVizAlpha=true;model.viz_alpha=new VizAlphaBlock(this,obj.src);}else if(obj.type==="VIZ_JS"){model.hasVizJS=true;if(model.viz_js){console.log(`Warning: Multiple \viz_js blocks for scope ${obj.ident}. Ignoring one.`);}
+model.viz_js=new VizBlock(this,obj.src,true,has_range,false);}else if(obj.children!=null){this.prepModel(obj);if(obj.hasVizAlpha){model.hasVizAlpha=true;}
+if(obj.hasVizJS){model.hasVizJS=true;}}}
+if(model.hasVizJS&&(model.viz_js==null)){return model.viz_js=new VizBlock(this,"",false,has_range,false);}}
+updateCyc(newCyc){var ref1,ref2,ref3,wasRendered;wasRendered=this.renderedCyc!==null;if(wasRendered){this.unrender();}
+this.cyc=newCyc;if(wasRendered){this.render();}
+return(ref1=this.project)!=null?(ref2=ref1.waveformPane)!=null?(ref3=ref2.wg)!=null?ref3.setVizCursorCycle(newCyc):void 0:void 0:void 0;}
+render(){this.oldTopInstance.render([],this);this.topInstance.render([],this);this.renderedCyc=this.cyc;return this.vizGlobal.canvas.renderAll();}
+unrender(){if((this.renderedCyc!==null)&&(this.oldTopInstance!==null)){this.oldTopInstance.render([],this,true);}
+if((this.renderedCyc!==null)&&(this.topInstance!==null)){this.topInstance.render([],this,true);}
+return this.renderedCyc=null;}};VizPane.prototype.model=null;VizPane.prototype.lastCompileID=null;VizPane.prototype.vcdCompileID=null;VizPane.prototype.parseModelCompileID=null;VizPane.prototype.vizGlobal=null;VizPane.prototype.oldTopInstance=null;VizPane.prototype.topInstance=null;VizPane.prototype.renderedCyc=null;VizPane.prototype.readyWaveData=null;VizPane.prototype.defaultVizSrc=`initAll() {
+  let notice = new fabric.Text(
+    "This model has no vizualization.\\nSee HELP menu for docs.",
+    {fontSize: 20, top: -30, left: -160}
+  )
+  return {objects: {notice}}
+}`;return VizPane;}).call(this);VizPane.Grid=(function(){class Grid{constructor(top1,context1,width,height,imageOptions){var base;this.top=top1;this.context=context1;this.imageOptions=imageOptions;this.canvasEl=document.createElement("canvas");this.canvasEl.width=width;this.canvasEl.height=height;this.imageOptions.width=width;this.imageOptions.height=height;if((base=this.imageOptions).imageSmoothing==null){base.imageSmoothing=false;}}
+getFabricObject(){if(this._imageEl===null){this._imageEl=document.createElement("img");}
+this._imageEl.src=this.canvasEl.toDataURL();if(this.fabricImage===null){this.fabricImage=new fabric.Image(this._imageEl,this.imageOptions);}
+this._imageEl.onload=()=>{this.fabricImage.setCoords();return this.context.getGlobal().canvas.renderAll();};return this.fabricImage;}
+toImage(){var image;image=document.createElement("img");image.src=canvas.toDataURL("image/gif");return image;}
+setCellColor(x,y,color){var ctx;ctx=this.canvasEl.getContext("2d");ctx.fillStyle=color;return ctx.fillRect(x,y,1,1);}};Grid.prototype.top=null;Grid.prototype.context=null;Grid.prototype.canvasEl=null;Grid.prototype.imageOptions=null;Grid.prototype._imageEl=null;Grid.prototype.fabricImage=null;return Grid;}).call(this);VizPane.ScalableFabric=(function(){class ScalableFabric extends Pane.ScalableContent{constructor(pane,scale,focus){super(pane);this.canvas=new fabric.Canvas('canvas',{imageSmoothingEnabled:false});this.canvas.renderOnAddRemove=false;this.contentValid=true;this.userBounds=new Pane.Rect().set(-1000,-1000,2000,2000);if(typeof scale!=="undefined"){this.setContentScale(scale,false);this.focusContentOn(focus.x,focus.y,false);this.is_first=false;}
+this.positionNewContent();}
+destroy(){return this.canvas.dispose();}
+resize(width,height){this.canvas.setWidth(width);this.canvas.setHeight(height);if(this.contentValid){return this.refreshContentPosition();}}
+refreshContentPosition(){var pan;this.canvas.setZoom(this.contentScale);pan=new fabric.Point(this.userFocus.x*this.canvas.getZoom()-this.canvas.getWidth()/2.0,this.userFocus.y*this.canvas.getZoom()-this.canvas.getHeight()/2.0);this.canvas.absolutePan(pan);return this.canvas.renderAll();}
+pixelsToUserUnits(px){return px/this.contentScale;}};ScalableFabric.prototype.canvas=null;return ScalableFabric;}).call(this);VizElement=(function(){class VizElement{constructor(parent,index1,modelScope,pane1,scopes){var angle,angle_rad,box,boxLeft,boxLeftParent,boxTop,boxTopParent,centeringBox,centeringProps,child,cos,firstChildObjectIndex,group_left,group_opts,group_top,height,height_scale,i,j,layout,left,name,obj,objects,objectsArray,ref1,ref2,ref3,ref4,ref5,ref6,replicated,scale,sin,template_clone,testGroup,top,viz,viz_block,where,whereBoxParams,width,width_scale,xRadius,yRadius;this.name=this.name.bind(this);this.onTraceData=this.onTraceData.bind(this);this._addedObject=this._addedObject.bind(this);this.parent=parent;this.index=index1;this.modelScope=modelScope;this.pane=pane1;this.depth=this.parent?this.parent.depth+1:0;this.renderedObjects=null;this.initObjects={};this.children={};this.objectsArray=[];this.initScopes(scopes);this.init();this.makeChildren(this.pane,scopes);replicated=(this.modelScope.min_index!=null)||(((ref1=this.modelScope.viz_js)!=null?ref1.all:void 0)!=null);viz_block=this.getVizBlock();viz=viz_block.viz;box=viz.box;this.context=new VizJSContext(this,this.pane.vizGlobal);testGroup=null;objectsArray=[];if(!box.bounded){testGroup=new fabric.Group(objectsArray,{originX:"left",originY:"top"});}
+this.initResults=viz_block.invoke("init",this.context,scopes);if(!this.initResults){this.initResults={};}
+template_clone={};Object.keys(viz.template).map(function(name,index){var args,obj_type;args=viz.template[name];obj_type=args.shift();template_clone[name]=new fabric[obj_type](...args);return args.unshift(obj_type);});if(((ref2=this.initResults)!=null?ref2.objects:void 0)!=null){console.log("\\viz_js init() returned \"objects\", which is for \\viz_alpha blocks.");}
+objects=Object.assign({},template_clone,this.initResults);if(!objects){objects={};}
+for(name in objects){obj=objects[name];this.initObjects[name]=obj;objectsArray.push(obj);}
+firstChildObjectIndex=objectsArray.length;if(!box.bounded){ref3=this.children;for(name in ref3){child=ref3[name];if(!child.whereBox.visible){child.whereBox.set("visible","false");}
+objectsArray.push(child.whereBox);}
+box=Object.assign({},box);testGroup._calcBounds();if(box.width==null){box.width=testGroup.getScaledWidth();}
+if(box.height==null){box.height=testGroup.getScaledHeight();}
+if(box.left!=null){box.width+=testGroup.left-box.left;}else{box.left=testGroup.left;}
+if(box.top!=null){box.height+=testGroup.top-box.top;}else{box.top=testGroup.top;}
+viz_block._fitBoxStroke(box);}
+this.initObjects.box=new fabric.Rect(box);width=this.initObjects.box.width+this.initObjects.box.strokeWidth;height=this.initObjects.box.height+this.initObjects.box.strokeWidth;objectsArray.unshift(this.initObjects.box);firstChildObjectIndex++;where=viz.where;layout=viz.layout;if(!layout){layout=height<width?"vertical":"horizontal";}
+left=where.left;top=where.top;if(left==null){left=box.left;}
+if(top==null){top=box.top;}
+angle=where.angle;if(typeof this.index==="number"){if(typeof layout==="string"){if(layout==="horizontal"){left+=this.index*width;}else if(layout==="vertical"){top+=this.index*height;}else{Utils.assert(false,`Invalid layout: \"${layout}\".`);}}else{if(typeof layout.left==="number"){left+=this.index*layout.left;}else if(layout.left instanceof Function){left+=layout.left(this.index);}
+if(typeof layout.top==="number"){top+=this.index*layout.top;}else if(layout.top instanceof Function){top+=layout.top(this.index);}
+if(typeof layout.angle==="number"){angle+=this.index*layout.angle;}else if(layout.angle instanceof Function){angle+=layout.angle(this.index);}}}
+scale=2e308;if(where.scale){scale=where.scale;}
+if(where.width){width_scale=where.width/width;if(width_scale<scale){scale=width_scale;}}
+if(where.height){height_scale=where.height/height;if(height_scale<scale){scale=height_scale;}}
+if(scale===2e308){scale=1;}
+boxLeft=box.left;boxTop=box.top;if(where.justifyX!=="left"){boxLeft-=((where.width/scale)-width)*(where.justifyX==="center"?0.5:1);}
+if(where.justifyY!=="top"){boxTop-=((where.height/scale)-height)*(where.justifyY==="center"?0.5:1);}
+if(angle){angle_rad=angle*Math.PI/180;sin=Math.sin(angle_rad);cos=Math.cos(angle_rad);boxLeftParent=boxLeft*cos-boxTop*sin;boxTopParent=boxLeft*sin+boxTop*cos;}else{boxLeftParent=boxLeft;boxTopParent=boxTop;}
+boxLeftParent*=scale;boxTopParent*=scale;group_left=left-boxLeftParent;group_top=top-boxTopParent;xRadius=Math.max(-box.left,box.left+width);yRadius=Math.max(-box.top,box.top+height);if(false){centeringProps={left:-xRadius,top:-yRadius,width:xRadius*2,height:yRadius*2,strokeWidth:0,fill:"#00000020"};centeringBox=new fabric.Rect(centeringProps);objectsArray.unshift(centeringBox);firstChildObjectIndex++;}
+group_opts={width:xRadius*2,height:yRadius*2,left:group_left,top:group_top,angle,scaleX:scale,scaleY:scale,originX:"center",originY:"center"};this.group=new fabric.Group(this.objectsArray,group_opts);whereBoxParams=Object.assign({visible:false,width:width*scale,height:height*scale,strokeWidth:0,fill:"#80808060"},where,{left,top,scaleX:1,scaleY:1});if(whereBoxParams.strokeWidth!=null){whereBoxParams.width-=whereBoxParams.strokeWidth;whereBoxParams.height-=whereBoxParams.strokeWidth;}
+this.whereBox=new fabric.Rect(whereBoxParams);for(i=j=0,ref4=firstChildObjectIndex-1;(0<=ref4?j<=ref4:j>=ref4);i=0<=ref4?++j:--j){this.objectsArray[i]=this._addedObject(objectsArray[i]);}
+ref5=this.children;for(name in ref5){child=ref5[name];if(child.whereBox.visible===true){this.objectsArray.push(this._addedObject(child.whereBox));}}
+ref6=this.children;for(name in ref6){child=ref6[name];this.objectsArray.push(this._addedObject(child.group));}
+this.doneScopes(scopes);}
+name(){return this.modelScope.ident.substring(1);}
+initScopes(name,scopes){}
+doneScopes(name,scopes){}
+init(){return Utils.abstractMethod();}
+makeChildren(pane,scopes){return Utils.abstractMethod();}
+onTraceData(scopes){var child,name,obj,ref1,ref2,rslt,viz_block;this.initScopes(scopes);ref1=this.children;for(name in ref1){child=ref1[name];child.onTraceData(scopes);}
+viz_block=this.getVizBlock();rslt=viz_block.invoke("onTraceData",this.context,scopes);if((rslt!=null?rslt.objects:void 0)!=null){ref2=rslt.objects;for(name in ref2){obj=ref2[name];this.initObjects[name]=obj;this.objectsArray.push(this._addedObject(obj));}}
+return this.doneScopes(scopes);}
+_addedObject(obj){obj.group=this.group;return obj;}
+render(scopes,pane,un){var child,color,fnName,j,len,name,obj,ref1,ref2,rslt,viz_js;Utils.assert(!un===(pane.renderedCyc===null));Utils.assert(!un===(this.renderedObjects===null));this.initScopes(scopes);if(!un){this.renderedObjects=[];}
+ref1=this.children;for(name in ref1){child=ref1[name];child.render(scopes,pane,un);}
+viz_js=this.getVizBlock();fnName=un?"unrender":"render";if(!un){color=viz_js.invoke("renderFill",this.context,scopes);if(color){this.initObjects.box.set("fill",color);}}
+rslt=viz_js.invoke(fnName,this.context,scopes);if(un){this.group.remove(...this.renderedObjects);this.renderedObjects=null;}else{if(rslt&&rslt.constructor===Array){this.renderedObjects.push(...rslt);ref2=this.renderedObjects;for(j=0,len=ref2.length;j<len;j++){obj=ref2[j];this.objectsArray.push(this._addedObject(obj));}}else{}}
+return this.doneScopes(scopes);}
+isInstance(){return Utils.abstractMethod();}
+getVizBlock(){return Utils.abstractMethod();}
+getScale(obj){var ret;ret=obj.scale;if(typeof ret!=="number"){Utils.assert(obj.scaleX===obj.scaleY,"Transforming Fabric.Object with different scaleX/Y values, which is not currently supported.");ret=obj.scaleX!=null?obj.scaleX:1;}
+return ret;}
+upMap(props){var angle_rad,cos,propsScale,radiusLeft,radiusTop,ret,sin;Utils.assert(this.group.scaleX===this.group.scaleY,"Component has differing scaleX and scaleY which isn't supported.");propsScale=this.getScale(props);radiusLeft=props.left*this.group.scaleX;radiusTop=props.top*this.group.scaleX;ret={};if(this.group.angle){angle_rad=this.group.angle*Math.PI/180;sin=Math.sin(angle_rad);cos=Math.cos(angle_rad);ret={left:this.group.left+radiusLeft*cos-radiusTop*sin,top:this.group.top+radiusLeft*sin+radiusTop*cos};}else{ret={left:this.group.left+radiusLeft,top:this.group.top+radiusTop};}
+ret.angle=(props.angle?props.angle:0)+this.group.angle;ret.scale=propsScale*this.group.scaleX;return ret;}
+ancestorMap(ancestor,props){var scope;scope=this;while(scope!==ancestor){props=scope.upMap(props,ancestor);scope=scope.parent;if(!scope){Utils.assert(false,"Ancestor not found.");return null;}}
+return props;}
+operateAlongPath(other,data,upCB,downCB){var downMap,parentData,ret,thisEl;ret=null;downMap=this.depth>=other.depth;if(this.depth>other.depth){ret=this.parent.operateAlongPath(other,data,upCB,downCB);}else{if(other===this){return data;}
+parentData=upCB instanceof Function?(upCB.bind(other))(data):data;thisEl=(this.depth===other.depth)?this.parent:this;ret=thisEl.operateAlongPath(other.parent,parentData,upCB,downCB);}
+if((downCB instanceof Function)&&downMap){return(downCB.bind(this))(ret);}else{return ret;}}
+_commonAncestor(other){var downCB,ret,upCB;upCB=function(data){return data;};downCB=function(data){if(data===null){return this.parent;}else{return data;}};ret=this.operateAlongPath(other,null,upCB,downCB);if(ret===null){ret=this;}
+return ret;}
+positionAncestorObject_WIP(ancestorScope,objName,referenceObject){var forwardMatrixFrom,matrix,obj,props;forwardMatrixFrom=function(toScope){var debug,matrix;debug=toScope.name();matrix=toScope.group.calcTransformMatrix();if(ancestorScope!==toScope.parent){matrix=fabric.util.multiplyTransformMatrices(forwardMatrixFrom(toScope.parent),matrix);}
+console.log(`Transforming through: ${debug}`);return matrix;};console.log("------");matrix=forwardMatrixFrom(this);matrix=fabric.util.multiplyTransformMatrices(matrix,referenceObject.calcOwnMatrix());props=fabric.util.qrDecompose(matrix);props.left=props.translateX;props.top=props.translateY;obj=ancestorScope.initObjects[objName];if(obj){return obj.set(props);}else{return Utils.assert(false,"Couldn't find Fabric.Object named \"objName\".");}}
+positionAncestorObject(ancestor,obj,props){var ancestorDimension,ancestorProps,boundingDimension,scale,scalingFactor;ancestorProps=props;if(ancestor===this){scale=this.getScale(props);if(ancestorProps.scaleX==null){ancestorProps.scaleX=scale;}
+if(ancestorProps.scaleY==null){ancestorProps.scaleY=scale;}}else{ancestorProps=this.ancestorMap(ancestor,props);if((props.width!=null)&&(props.height!=null)){scalingFactor=ancestorProps.scale/this.getScale(props);boundingDimension=(props.height/props.width>obj.height/obj.width)?"width":"height";ancestorDimension=props[boundingDimension]*ancestorProps.scale;ancestorProps.scale=ancestorDimension/obj[boundingDimension];}
+ancestorProps.scaleX=ancestorProps.scale;ancestorProps.scaleY=ancestorProps.scale;if(props.originX!=null){ancestorProps.originX=props.originX;}
+if(props.originY!=null){ancestorProps.originY=props.originY;}}
+delete ancestorProps.scale;return obj.set(ancestorProps);}};VizElement.prototype.pane=null;VizElement.prototype.parent=null;VizElement.prototype.index=void 0;VizElement.prototype.modelScope=null;VizElement.prototype.depth=null;VizElement.prototype.box=null;VizElement.prototype.whereBox=null;VizElement.prototype.group=null;VizElement.prototype.children=null;VizElement.prototype.renderedObjects=null;VizElement.prototype.initObjects=null;VizElement.prototype.initResults=void 0;VizElement.prototype.objectsArray=null;VizElement.prototype.context=null;return VizElement;}).call(this);VizScopeElement=class VizScopeElement extends VizElement{init(){return null;}
+makeChildren(pane,scopes){var i,j,ref1,ref2,results;if((this.modelScope.min_index!=null)&&(typeof this.modelScope.min_index==="number")){results=[];for(i=j=ref1=this.modelScope.min_index,ref2=this.modelScope.max_index;(ref1<=ref2?j<=ref2:j>=ref2);i=ref1<=ref2?++j:--j){results.push(this.children[i]=new VizInstanceElement(this,i,this.modelScope,pane,scopes));}
+return results;}else{return this.children[""]=new VizInstanceElement(this,0,this.modelScope,pane,scopes);}}
+isInstance(){return false;}
+getVizBlock(){return this.modelScope.viz_js.all;}};VizInstanceElement=class VizInstanceElement extends VizElement{initScopes(scopes){return scopes[this.name()]=this;}
+doneScopes(scopes){return delete scopes[this.name()];}
+init(){return null;}
+makeChildren(pane,scopes){var child,j,len,name,ref1,ref2,replicated,results;ref1=this.modelScope.children;results=[];for(j=0,len=ref1.length;j<len;j++){child=ref1[j];if(child.hasVizJS){replicated=(child.min_index!=null)||(((ref2=child.viz_js)!=null?ref2.all:void 0)!=null);name=child.ident.substring(1);if(this.children[name]!=null){console.log(`Multiple viz elements named ${name}. Support is WIP.`);name=name+"_";}
+results.push(this.children[name]=(replicated?new VizScopeElement(this,null,child,pane,scopes):new VizInstanceElement(this,0,child,pane,scopes)));}else{results.push(void 0);}}
+return results;}
+isInstance(){return true;}
+getVizBlock(){return this.modelScope.viz_js;}};VizJSContext=(function(){class VizJSContext{constructor(_viz,global1){this.sigRef=this.sigRef.bind(this);this.sigVal=this.sigVal.bind(this);this._viz=_viz;this.global=global1;}
+getCycle(){return this._viz.pane.cyc;}
+getGlobal(){return this._viz.pane.vizGlobal;}
+getContext(){return this._viz;}
+getScope(name){if(name){return this.scopes[name];}else{return this._viz;}}
+getIndex(name){if(name){return this.scopes[name].index;}else{return this._viz.index;}}
+getCanvas(){return this.getGlobal().canvas;}
+getBox(){return this.getObjects().box;}
+fromInit(){return this._viz.initResults;}
+fromRender(){return this._viz.renderedResults;}
+getInitObject(name){return this._viz.initObjects[name];}
+getInitObjects(){return this._viz.initObjects;}
+getObjects(){return this._viz.initObjects;}
+renderOnly(fnName){if(!this._viz.initObjects){console.log(`Function ${fnName} should only be used while rendering a specific cycle.`);debugger;return null;}}
+signalSet(sigs){return new SignalValueSet(sigs);}
+sigRef(name,phaseOfPipestageZero){var cyc,sig,sigName;this.renderOnly();sigName="TLV"+name;sig=this._viz.pane.waveData.getSignalByName(sigName);if(false){if(sig===null){sig=this._viz.pane.waveData.getSignalByName("");}}else{if(!sig){return null;}}
+cyc=this.getCycle()-phaseOfPipestageZero/2+sig.cycle;return new SignalValue(sig,cyc);}
+svSigRef(sig,cycOffset=0){return this.sigVal(sig,cycOffset);}
+sigVal(sig,cycOffset=0){var sigName;this.renderOnly();sigName="SV."+sig;sig=this._viz.pane.waveData.getSignalByName(sigName);if(false){if(sig===null){sig=this._viz.pane.waveData.getSignalByName("");}}else{if(!sig){return null;}}
+return new SignalValue(sig,this.getCycle()+cycOffset);}
+_mapPoint(x,y,obj){var angle_rad,cos,left,sin,top;x+=obj.originX==="left"?0:obj.originX==="right"?-1:-0.5;y+=obj.originY==="top"?0:obj.originY==="bottom"?-1:-0.5;x*=obj.getScaledWidth();y*=obj.getScaledHeight();if(obj.angle){angle_rad=obj.angle*Math.PI/180;sin=Math.sin(angle_rad);cos=Math.cos(angle_rad);left=x*cos-y*sin;top=x*sin+y*cos;}else{left=x;top=y;}
+return{left,top};}
+newImageFromURL(url,attribution,where,imgOptions={}){var callback,group,height,imgOpts,rectOpts,width;if(typeof attribution!=="string"){console.log("newImageFromURL(..) requires an attribution argument.");imgOptions=where;where=attribution;attribution="";}
+imgOpts={};if(typeof where==="klass"){imgOpts=Object.assign({},imgOptions);}else{imgOpts=Object.assign({crossOrigin:"anonymous"},where,imgOptions);rectOpts=Object.assign({strokeWidth:1,fill:"transparent",stroke:"#80808080",left:0,top:0},where);if((rectOpts.width!=null)&&(rectOpts.height!=null)){rectOpts.width-=rectOpts.strokeWidth;rectOpts.height-=rectOpts.strokeWidth;}else{rectOpts.strokeWidth=0;rectOpts.visible=false;}
+where=new fabric.Rect(rectOpts);}
+width=imgOpts.width;height=imgOpts.height;delete imgOpts.width;delete imgOpts.height;group=new fabric.Group([where]);callback=(img)=>{var attrib,grp,left,prop,scaleHeightBy,scaleWidthBy,scaleXBy,scaleYBy,shadow,top,xScaling,yScaling;scaleXBy=scaleYBy=1;if((imgOpts.scaleX!=null)||(imgOpts.scaleY!=null)){if(imgOpts.scaleX==null){imgOpts.scaleX=1;}
+if(imgOpts.scaleY==null){imgOpts.scaleY=1;}}else{xScaling=width!=null;yScaling=height!=null;if(xScaling||yScaling){scaleWidthBy=2e308;scaleHeightBy=2e308;if(xScaling){if(width==null){width=where.getScaledWidth();}
+scaleWidthBy=width/((img.width+img.strokeWidth)*img.scaleX);}
+if(height!=null){if(height==null){height=where.getScaledHeight();}
+scaleHeightBy=height/((img.height+img.strokeWidth)*img.scaleY);}
+scaleXBy=scaleYBy=scaleWidthBy<scaleHeightBy?scaleWidthBy:scaleHeightBy;}}
+img.set({scaleX:img.scaleX*scaleXBy,scaleY:img.scaleY*scaleYBy});group.remove(where);grp=group.group;group.group=null;group.addWithUpdate(img);if(attribution){({left,top}=this._mapPoint(0.97,0.95,img));shadow=new fabric.Shadow({color:"gray",blur:5});prop={fill:"black",stroke:"white",strokeWidth:img.getScaledWidth()/3000,fontFamily:"Roboto",fontWeight:600,fontSize:img.getScaledWidth()/80,left:left,top:top,originX:"left",originY:"bottom",opacity:0.8};attrib=new fabric.Text(attribution,prop);group.add(attrib);}
+return group.group=grp;};new fabric.Image.fromURL(url,callback,imgOpts);return group;}};VizJSContext.prototype._viz=null;VizJSContext.prototype.scopes=null;return VizJSContext;}).call(this);VizBlock=(function(){class VizBlock{constructor(pane1,src,explicit,range,fromAll){var base,base1,base10,base11,base2,base3,base4,base5,base6,base7,base8,base9,ret,safeTemplate;this.invoke=this.invoke.bind(this);this.pane=pane1;if(fromAll){this.exec=nxCompiler.compileCode(`let viz = {${src}}; if (!viz.all) {viz.all = {}}; viz.all.where = viz.where; return viz.all;`);}else{this.exec=nxCompiler.compileCode(`let viz = {${src}}; if (${!!range} || viz.all) {viz.where = viz.where0}; return viz`);}
+this.viz=this.exec.bind({})(VizBlock.staticSandboxEnv);if(!fromAll){Utils.assert(!(this.viz.all&&this.viz.all.where),"\\viz_js 'where' property should not be within the 'all' property.");Utils.assert(!(this.viz.where0&&!this.viz.all),"\\viz_js 'where0' with no 'all' not allowed.");}
+Utils.assert(!(this.viz.where&&this.viz.where.layout),"\\viz_js 'layout' property should not be within 'where'/'where0' property.");if((base=this.viz).template==null){base.template={};}
+if((base1=this.viz).where==null){base1.where={};}
+if((base2=this.viz.where).angle==null){base2.angle=0;}
+if((base3=this.viz.where).originX==null){base3.originX="left";}
+if((base4=this.viz.where).originY==null){base4.originY="top";}
+if((base5=this.viz.where).justifyX==null){base5.justifyX="left";}
+if((base6=this.viz.where).justifyY==null){base6.justifyY="top";}
+if((base7=this.viz).box==null){base7.box={};}
+if(this.viz.width!=null){this.viz.box.width=this.viz.width;}
+if(this.viz.height!=null){this.viz.box.height=this.viz.height;}
+if(this.viz.left!=null){this.viz.box.left=this.viz.left;}
+if(this.viz.top!=null){this.viz.box.top=this.viz.top;}
+if(this.viz.fill!=null){this.viz.box.fill=this.viz.fill;}
+if(this.viz.stroke!=null){this.viz.box.stroke=this.viz.stroke;}
+if(this.viz.strokeWidth!=null){this.viz.box.strokeWidth=this.viz.strokeWidth;}
+if(this.viz.box.width!=null){if((base8=this.viz.box).left==null){base8.left=0;}}
+if(this.viz.box.height!=null){if((base9=this.viz.box).top==null){base9.top=0;}}
+if((this.viz.box.width!=null)&&this.viz.box.height&&(this.viz.layout==null)){this.viz.layout=(this.viz.box.height<this.viz.box.width)?"vertical":"horizontal";}
+if(typeof this.viz.box.strokeWidth==="undefined"){this.viz.box.strokeWidth=!explicit||((this.viz.box.stroke==null)&&(this.viz.box.fill!=null))?0:1;}
+if((base10=this.viz.box).fill==null){base10.fill="transparent";}
+if(explicit){if((base11=this.viz.box).stroke==null){base11.stroke="#80808080";}}
+this._fitBoxStroke(this.viz.box);if((this.viz.box.angle!=null)||(this.viz.box.originX!=null)||(this.viz.box.originY!=null)||(this.viz.box.scaleX!=null)||(this.viz.box.scaleY!=null)){Utils.assert(false,"\\viz_js 'box' properties should not include 'angle', 'originX' 'originY', 'scaleX', or 'scaleY'.");}
+if(this.viz.where.originX!=="left"||this.viz.where.originY!=="top"){Utils.assert(false,"\\viz_js 'where' properties should not include 'originX' or 'originY'.");}
+if(typeof this.viz.template==="function"){safeTemplate=nxCompiler.compileCode("return ((() => {let template_this = {}; let template = this.template_fn.bind(template_this)(); return {template, template_this};})())");ret=safeTemplate.bind({template_fn:this.viz.template})(VizBlock.staticSandboxEnv);this.viz.template=ret.template;this.templateThis=ret.template_this;}
+if(!fromAll&&(range||this.viz.all)){this.all=new VizBlock(this.pane,src,this.viz.all,null,true);}}
+_fitBoxStroke(box){if(!box.bounded&&(box.width!=null)&&(box.height!=null)){if(box.height<1){box.height=1;}
+if(box.width<1){box.width=1;}
+if(box.strokeWidth){if(box.strokeWidth>box.width/3){box.strokeWidth=box.width/3;}
+if(box.strokeWidth>box.height/3){box.strokeWidth=box.height/3;}
+box.width-=box.strokeWidth;box.height-=box.strokeWidth;}else{box.strokeWidth=0;}
+return box.bounded=true;}}
+invoke(fn,context,scopes){var e,global,ret,viz_fn;global=this.pane.vizGlobal;Object.assign(context,this.templateThis);viz_fn=this.exec(VizBlock.staticSandboxEnv)[fn];ret=null;if(typeof viz_fn==="function"){context.scopes=scopes;try{ret=(viz_fn.bind(context))();}catch(error){e=error;console.log(`Error executing \\viz_js function:
+--------------
+${viz_fn.toString()}
+--------------
+   Error: ${e.message}`);debugger;try{(viz_fn.bind(context))();}catch(error){e=error;null;}}
+context.scopes=null;}
+return ret;}
+static windowEnv(props,window_fns){var env,j,k,len,len1,prop;env={};for(j=0,len=props.length;j<len;j++){prop=props[j];if(window[prop]!=null){env[prop]=window[prop];}else{console.log(`Warning: global ${prop} does not exist for inclusion in VIZ sandbox environment.`);}}
+for(k=0,len1=window_fns.length;k<len1;k++){prop=window_fns[k];if(window[prop]!=null){env[prop]=window[prop].bind(window);}else{console.log(`Warning: global ${prop} does not exist for inclusion in VIZ sandbox environment.`);}}
+return env;}
+static staticSandboxEnvFn(){var ret;ret=this.windowEnv(["Infinity","NaN","eval","isFinite","isNaN","parseFloat","parseInt","Object","Function","Boolean","Symbol","Error","EvalError","RangeError","ReferenceError","SyntaxError","TypeError","URIError","Number","BigInt","Math","Date","String","RegExp","Array","Int8Array","Uint8Array","Uint8ClampedArray","Int16Array","Uint16Array","Int32Array","Uint32Array","Float32Array","Float64Array","BigInt64Array","BigUint64Array","Map","Set","WeakMap","WeakSet","ArrayBuffer","Atomics","DataView","JSON","Promise","Reflect","Proxy","Intl","console","alert","atob","confirm","prompt","fabric"],["setInterval","setTimeout","clearInterval","clearTimeout"]);ret.window=ret;return ret;}};VizBlock.prototype.pane=null;VizBlock.prototype.exec=null;VizBlock.prototype.viz=null;VizBlock.prototype.templateThis={};VizBlock.prototype.all=null;VizBlock.staticSandboxEnv=VizBlock.staticSandboxEnvFn();return VizBlock;}).call(this);VizAlphaContext=(function(){class VizAlphaContext{constructor(methodName,cyc1,scopes1,context1,definition,global1){this.sigRef=this.sigRef.bind(this);this.svSigRef=this.svSigRef.bind(this);this.sigVal=this.sigVal.bind(this);this.methodName=methodName;this.cyc=cyc1;this.scopes=scopes1;this.context=context1;this.definition=definition;this.global=global1;if(this.methodName.startsWith("render")){this.initObjects=null;}else{this.render=null;}}
+getCycle(){return this.cyc;}
+getGlobal(){return this.global;}
+getContext(){return this.context;}
+getDefinition(){return this.definition;}
+getScope(name){return this.scopes[name];}
+getIndex(name){if(name){return this.scopes[name].index;}else{return this.context.index;}}
+getCanvas(){return this.global.canvas;}
+fromInit(){return this.context.initResults;}
+fromRender(){return this.context.renderedResults;}
+getInitObject(name){return this.context.initObjects[name];}
+getInitObjects(){return this.context.initObjects;}
+sigRef(sig,phaseOfPipestageZero){var sigName;sigName="TLV"+sig;sig=this.definition.pane.waveData.getSignalByName(sigName);if(!sig){return null;}
+return new SignalValue(sig,this.cyc-phaseOfPipestageZero/2+sig.cycle);}
+svSigRef(sig,cycOffset=0){return this.sigVal(sig,cycOffset);}
+sigVal(sig,cycOffset=0){var sigName;sigName="SV."+sig;sig=this.definition.pane.waveData.getSignalByName(sigName);if(!sig){return null;}
+return new SignalValue(sig,this.cyc+cycOffset);}};VizAlphaContext.prototype.methodName=null;VizAlphaContext.prototype.cyc=null;VizAlphaContext.prototype.global=null;VizAlphaContext.prototype.context=null;VizAlphaContext.prototype.definition=null;VizAlphaContext.prototype.scopes=null;return VizAlphaContext;}).call(this);VizInstanceContext=(function(){class VizInstanceContext{constructor(scope1,index1,submodel,pane,scopes){var child,j,len,name,obj,objectsArray,ref1,ref2,ref3;this.scope=scope1;this.index=index1;scopes[this.scope.name]=this;this.renderedObjects=[];this.initObjects={};this.children={};if(submodel.viz_alpha!=null){this.initResults=submodel.viz_alpha.invoke("initEach",pane.cyc,scopes,this);if(((ref1=this.initResults)!=null?ref1.objects:void 0)!=null){objectsArray=[];ref2=this.initResults.objects;for(name in ref2){obj=ref2[name];this.initObjects[name]=obj;objectsArray.push(obj);pane.vizGlobal.canvas.add(obj);}}}
+ref3=submodel.children;for(j=0,len=ref3.length;j<len;j++){child=ref3[j];if(child.ident!=null){name=child.ident.substring(1);this.children[name]=new VizScopeContext(this,name,child,pane,scopes);}}
+delete scopes[this.scope.name];}
+render(scopes,pane,un){var child,fnName,name,ref1,ref2,rslt;Utils.assert(!un===(pane.renderedCyc===null));scopes[this.scope.name]=this;if(this.scope.modelScope.viz_alpha!=null){fnName=un?"unrenderEach":"renderEach";rslt=this.scope.modelScope.viz_alpha.invoke(fnName,pane.cyc,scopes,this);if(un){pane.vizGlobal.canvas.remove(...this.renderedObjects);this.renderedObjects=[];}else{this.renderResults=rslt;if(((ref1=this.renderResults)!=null?ref1.objects:void 0)!=null){this.renderedObjects=this.renderResults.objects;pane.vizGlobal.canvas.add(...this.renderedObjects);}}}
+ref2=this.children;for(name in ref2){child=ref2[name];child.render(scopes,pane,un);}
+return delete scopes[this.scope.name];}};VizInstanceContext.prototype.scope=null;VizInstanceContext.prototype.index=null;VizInstanceContext.prototype.children=null;VizInstanceContext.prototype.renderedObjects=null;VizInstanceContext.prototype.initObjects=null;VizInstanceContext.prototype.initResults=void 0;VizInstanceContext.prototype.renderResults=void 0;return VizInstanceContext;}).call(this);VizScopeContext=(function(){class VizScopeContext{constructor(parentInstance,name1,modelScope,pane,scopes){var i,j,name,obj,ref1,ref2,ref3,ref4;this.parentInstance=parentInstance;this.name=name1;this.modelScope=modelScope;this.instances={};this.renderedObjects=[];this.initObjects={};if(this.modelScope.viz_alpha!=null){this.initResults=this.modelScope.viz_alpha.invoke("initAll",pane.cyc,scopes,this);if(((ref1=this.initResults)!=null?ref1.objects:void 0)!=null){ref2=this.initResults.objects;for(name in ref2){obj=ref2[name];this.initObjects[name]=obj;pane.vizGlobal.canvas.add(obj);}}}
+if((this.modelScope.min_index!=null)&&(typeof this.modelScope.min_index==="number")){for(i=j=ref3=this.modelScope.min_index,ref4=this.modelScope.max_index;(ref3<=ref4?j<=ref4:j>=ref4);i=ref3<=ref4?++j:--j){this.instances[i.toString()]=new VizInstanceContext(this,i.toString(),this.modelScope,pane,scopes);}}else{this.instances[""]=new VizInstanceContext(this,null,this.modelScope,pane,scopes);}}
+render(scopes,pane,un){var fnName,i,inst,ref1,ref2,results,rslt;Utils.assert(!un===(pane.renderedCyc===null));if(this.modelScope.viz_alpha!=null){fnName=un?"unrenderAll":"renderAll";rslt=this.modelScope.viz_alpha.invoke(fnName,pane.cyc,scopes,this);if(un){pane.vizGlobal.canvas.remove(...this.renderedObjects);}else{this.renderResults=rslt;if(((ref1=this.renderResults)!=null?ref1.objects:void 0)!=null){this.renderedObjects=this.renderResults.objects;pane.vizGlobal.canvas.add(...this.renderedObjects);}}}
+ref2=this.instances;results=[];for(i in ref2){inst=ref2[i];results.push(inst.render(scopes,pane,un));}
+return results;}};VizScopeContext.prototype.parentInstance=null;VizScopeContext.prototype.name=null;VizScopeContext.prototype.modelScope=null;VizScopeContext.prototype.instances=null;VizScopeContext.prototype.renderedObjects=null;VizScopeContext.prototype.initObjects=null;VizScopeContext.prototype.initResults=void 0;VizScopeContext.prototype.renderResults=void 0;return VizScopeContext;}).call(this);VizAlphaBlock=(function(){class VizAlphaBlock{constructor(pane1,src1){this.pane=pane1;this.src=src1;this.invoke=function(){return void 0;};this.exec=nxCompiler.compileCode(`return {${this.src}}`);this.invoke=(fn,cyc,scopes,instance)=>{var context,e,global,top,viz;context=new VizAlphaContext(fn,cyc,scopes,instance,this,this.pane.vizGlobal);global=this.pane.vizGlobal;top=Object.assign(VizAlphaBlock.staticSandboxEnv,{fn,cyc,scopes,instance,this:this,VizAlphaContext,fabric,sigRef:this.sigRef,global,context});top.top=top;viz=this.exec(top);if(typeof viz[fn]==="function"){try{return(viz[fn].bind(context))();}catch(error){e=error;console.log(`Error executing the function: ${fn}()
+   from \\viz* script:
+--------------
+${this.src}
+--------------
+   Error: ${e.message}`);debugger;try{(viz[fn].bind(context))();}catch(error){e=error;null;}
+return null;}}};}
+static windowEnv(props,window_fns){var env,j,k,len,len1,prop;env={};for(j=0,len=props.length;j<len;j++){prop=props[j];if(window[prop]!=null){env[prop]=window[prop];}else{console.log(`Warning: global ${prop} does not exist for inclusion in VIZ sandbox environment.`);}}
+for(k=0,len1=window_fns.length;k<len1;k++){prop=window_fns[k];if(window[prop]!=null){env[prop]=window[prop].bind(window);}else{console.log(`Warning: global ${prop} does not exist for inclusion in VIZ sandbox environment.`);}}
+return env;}
+static staticSandboxEnvFn(){return this.windowEnv(["Infinity","NaN","eval","isFinite","isNaN","parseFloat","parseInt","Object","Function","Boolean","Symbol","Error","EvalError","RangeError","ReferenceError","SyntaxError","TypeError","URIError","Number","BigInt","Math","Date","String","RegExp","Array","Int8Array","Uint8Array","Uint8ClampedArray","Int16Array","Uint16Array","Int32Array","Uint32Array","Float32Array","Float64Array","BigInt64Array","BigUint64Array","Map","Set","WeakMap","WeakSet","ArrayBuffer","Atomics","DataView","JSON","Promise","Reflect","Proxy","Intl","console","alert","atob","confirm","prompt"],["setInterval","setTimeout","clearInterval","clearTimeout"]);}};VizAlphaBlock.prototype.pane=null;VizAlphaBlock.prototype.src=null;VizAlphaBlock.prototype.invoke=null;VizAlphaBlock.staticSandboxEnv=VizAlphaBlock.staticSandboxEnvFn();return VizAlphaBlock;}).call(this);Utils.extend(VizPane,Pane.Steppable);Utils.extend(VizPane,Pane.Scalable);Utils.extend(VizPane,module.config(),true,true);Utils.extend(VizPane,ModelViewSync);return VizPane;});}).call(this);

@@ -1,0 +1,12 @@
+(function(){define("Graph",function(require,exports,module){var $,Graph,Logging,ModelViewSync,Pane,Promise,Utils;Logging=require("Logging");ModelViewSync=require("ModelViewSync");Pane=require("Pane");$=require("jquery");Logging=require("Logging");Utils=require("Utils");Promise=require("bluebird");Graph=class Graph extends Pane{init(name,ide,project,tabbedview){return this.initPane("Graph",name,ide,project,tabbedview,{},true).then(()=>{this.enableTimestamp();this.content=new Graph.Content(this);return this;});}
+_highlightLogicalElement(le){return $(`[logical_entity='${le}']`,this.contentContainerEl).find("[stroke]").addClass("highlight");}
+_unhighlightLogicalElements(){return $("[logical_entity] .highlight",this.contentContainerEl).removeClass("highlight");}
+compiler(compiler){compiler.on("graph",(svg)=>{return this.content.newSVG(svg);});compiler.on("graphviz/done",(data)=>{if(data.success==="success"){return this.setStatus("success");}
+return this.setStatus(data.timeout?"timeout":"fail");});compiler.on("newcompile",()=>{return this.setStatus("working");});return this;}};Graph.Content=class Content extends Pane.ScalableSVG{constructor(pane){super(pane);this.construct(pane);}
+setBounds(viewBox){return this.userBounds.set(-4,-(viewBox.height-4),viewBox.width,viewBox.height);}
+initContent(){this.contentContainerEl.on("click",(e)=>{if(this.pane.dragging||!this.contentValid){return;}
+if($(e.target).parents("[data-diagram-zooming]").length>0){return;}
+if($(e.target).attr("logical_entity")||$(e.target).parents("[logical_entity]").attr("logical_entity")){return;}
+e.preventDefault();return this.pane.unhighlightLogicalElements();});return this.contentContainerEl.on("click","[logical_entity]",(e)=>{var le;if(this.pane.dragging||!this.contentValid){return;}
+le=$(e.target).parents("[logical_entity]").last().attr("logical_entity");if(!le){return;}
+e.preventDefault();return this.pane.highlightLogicalElement(le,e.ctrlKey);});}};Utils.extend(Graph,Pane.Scalable);Utils.extend(Graph,module.config(),true,true);Utils.extend(Graph,ModelViewSync,{_highlightLogicalElement:1,_unhighlightLogicalElements:1});return Graph;});}).call(this);

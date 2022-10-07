@@ -1,0 +1,9 @@
+(function(){define("ModelViewSync",function(require,exports){var ModelViewSync;ModelViewSync={_modelViews:null,modelViews:function(views=[]){views.push(this);return this._modelViews=views;},highlightLogicalElement:function(el,remainHiglighted=false){var i,len,ref,results,view;if(!remainHiglighted){this.unhighlightLogicalElements();}
+if(this._modelViews){ref=this._modelViews;results=[];for(i=0,len=ref.length;i<len;i++){view=ref[i];if(view._highlightLogicalElement){results.push(view._highlightLogicalElement(el));}}
+return results;}},highlightBehHier:function(el,remainHiglighted=false){var i,len,ref,results,view;if(!remainHiglighted){this.unhighlightBehHiers();}
+if(!this._modelViews){return;}
+ref=this._modelViews;results=[];for(i=0,len=ref.length;i<len;i++){view=ref[i];if(!(view._highlightBehHier&&view._highlightBehHier(el))){results.push(view._highlightLogicalElement(el));}else{results.push(void 0);}}
+return results;},unhighlightBehHiers:function(){var i,len,ref,results,view;if(!this._modelViews){return;}
+ref=this._modelViews;results=[];for(i=0,len=ref.length;i<len;i++){view=ref[i];if(!(view._unhighlightBehHiers&&view._unhighlightBehHiers())){results.push(view._unhighlightLogicalElements());}else{results.push(void 0);}}
+return results;},unhighlightLogicalElements:function(){var i,len,ref,results,view;if(this._modelViews){ref=this._modelViews;results=[];for(i=0,len=ref.length;i<len;i++){view=ref[i];if(view._unhighlightLogicalElements){results.push(view._unhighlightLogicalElements());}}
+return results;}},_highlightLogicalElement:function(el){return void 0;},_unhighlightLogicalElements:function(){return void 0;},_highlightBehHier:function(el){return void 0;},_unhighlightBehHiers:function(){return void 0;}};return ModelViewSync;});}).call(this);

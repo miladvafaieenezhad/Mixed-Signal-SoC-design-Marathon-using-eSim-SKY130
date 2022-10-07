@@ -1,0 +1,17 @@
+(function(){var $,SignalValueSet,Utils;[$,Utils]=[];SignalValueSet=(function(){class SignalValueSet{constructor(_sigs){this._sigs=_sigs;null;}
+sig(name){return this._sigs[name];}
+step(cyc=1){var name,ref,sig;ref=this._sigs;for(name in ref){sig=ref[name];sig.step(cyc);}
+return this;}
+do(rep,fn){var delta,name,origCyc,ref,ret,sig;origCyc=rep.getCycle();ret=fn(rep);delta=rep.getCycle()-origCyc;ref=this._sigs;for(name in ref){sig=ref[name];if(sig!==rep){sig.step(delta);}}
+return ret;}
+forwardToValue(rep,val){return this.do(rep,function(){return rep.forwardToValue(val);});}
+backToValue(rep,val){return this.do(rep,function(){return rep.backToValue(val);});}
+stepTransition(rep,steps=1){return this.do(rep,function(){return rep.stepTransition(steps);});}
+stepTo(cyc){var name,ref,sig;ref=this._sigs;for(name in ref){sig=ref[name];sig.stepTo(cyc);}
+return this;}
+goTo(cyc){var name,ref,sig;ref=this._sigs;for(name in ref){sig=ref[name];sig.goTo(cyc);}
+return this;}
+goToSimStart(){var name,ref,sig;ref=this._sigs;for(name in ref){sig=ref[name];sig.goToSimStart();}
+return this;}
+goToSimEnd(){var name,ref,sig;ref=this._sigs;for(name in ref){sig=ref[name];sig.goToSimEnd();}
+return this;}};SignalValueSet.prototype._sigs=null;return SignalValueSet;}).call(this);define(function(require,exports,module){$=require("jquery");Utils=require("Utils");$.extend(SignalValueSet.prototype,module.config());return SignalValueSet;});}).call(this);
