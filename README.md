@@ -1,5 +1,5 @@
 # Mixed-Signal-SoC-design-Marathon-using-eSim-SKY130
-This marathon is based on eSim, an open-source EDA tool for circuit design, simulation, and PCB design, developed by FOSSEE, IIT Bombay. 
+This marathon is based on eSim, an open-source EDA tool for circuit design, simulation, and PCB design, developed by FOSSEE, IIT Bombay. In this marathon, more than 2700 people participated among which about 100 participants were selected as accepted ones. The final result is announced at https://hackathon.fossee.in/esim/results.
 
 # Abstract
 This work presents a window comparator connected to a 4-bit binary counter. The output of counter goes to a multiplexer as selection lines to direct one of multiples data sources into a single destination. The window comparator circuit, analog part, and counter along with multiplexer, digital circuit, make a mixed signal circuit which is the goal of this project to meet. The simulation is implemented in eSim using SKY130 technology. 
